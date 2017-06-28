@@ -1,3 +1,4 @@
+var fs = require('fs');
 var route = function(handle, pathname, response, request) {
     console.log('route' + pathname);
     if (typeof handle[pathname] === 'function') {

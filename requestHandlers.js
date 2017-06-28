@@ -4,7 +4,6 @@ var fs = require("fs");
 var caiji = require("./caiji");
 // var config = require("./config");
 // formidable = require("formidable");
-console.log(caiji)
 
 function start(response) {
     console.log("Request handler 'start' was called.");
