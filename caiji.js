@@ -3,6 +3,11 @@ var https = require('https');
 var urls = require('url');
 var config = require("./config");
 var async = require('async');
+var $ = require('jquery');
+var crypto = require('crypto');
+var appId = 20170629000060890,
+    miyao = 'oqKHBBVYEUqsEDymM1fN';
+
 var caiji = {
     parseOverflowPagesize: function(html) {
         if (!html) {
@@ -92,7 +97,7 @@ var caiji = {
     },
     getArticleContent: function(html) {
         var titleReg = /[^>]+(?=<\/a>[\r\n]?<\/h1>)/,
-            contentReg = /<div class="post-text" itemprop="text">[\w\W]+?(?=<\/div>)/
+            contentReg = /<div class="post-text" itemprop="text">[\w\W]+?(?=<\/div>)/g
         var title = html.match(titleReg);
         var content = html.match(contentReg);
         var result = {
@@ -101,11 +106,104 @@ var caiji = {
         }
         return result
     },
+    baiduFanyi: function(query, callback) {
+        var appid = appId;
+        var key = miyao;
+        var salt = (new Date).getTime();
+        // var query = 'apple';
+        // 多个query可以用\n连接  如 query='apple\norange\nbanana\npear'
+        var from = 'en';
+        var to = 'zh';
+        console.log(query)
+        var str1 = appid + query + salt + key;
+        var md5 = crypto.createHash('md5');
+        var sign = md5.update(str1).digest('hex');
+        console.log(sign)
+        var url = 'http://api.fanyi.baidu.com/api/trans/vip/translate?q='+query+'&appid='+appid+'&salt='+salt+'&sign='+sign+'&from='+from+'&to='+to
+        // http.get(url,function(req,res){
+
+        // })
+        // this.getRequest(url,function(data){
+        //     console.log('data',data)
+        // })
+        // $.ajax({
+        //     url: 'http://api.fanyi.baidu.com/api/trans/vip/translate',
+        //     type: 'get',
+        //     dataType: 'jsonp',
+        //     data: {
+        //         q: query,
+        //         appid: appid,
+        //         salt: salt,
+        //         from: from,
+        //         to: to,
+        //         sign: sign
+        //     },
+        //     success: function(data) {
+        //         callback(data);
+        //     }
+        // });
+    },
+    formatContent:function(content){
+        var result = [],
+            reg = /<pre><code>[\w\W]*?<\/code><\/pre>/g;
+            c = content.replace(reg,'##||##'),
+            cas = c.split("##||##") || [];
+            result = cas.map(function(ca){
+                return ca.replace(/<\/?.*?>/g,'')
+            })
+            console.log('formatContent')
+        return result;
+    },
+    translate: function(content, callback) {
+        var title = content.title,
+            contents = content.content || [],
+            self = this,
+            result = [],
+            reg = /<pre><code>[\w\W]*?<\/code><\/pre>/g;
+        // contents.unshift(title);
+        console.log('contents',contents.length)
+        async.mapSeries(contents, function(ct) {
+            console.log('----------------------------------------------------')
+            // console.log('ct',ct)
+            var codes = ct.match(reg);
+            var formatContent = self.formatContent(ct);
+            var resultContent = []
+            async.mapSeries(formatContent,function(cct){
+                self.baiduFanyi(cct,function(data){
+                if (data && data.trans_result && data.trans_result.dst) {
+                    resultContent.push(data.trans_result.dst);
+                }          
+                })
+            },function(err,results){
+                var r = [];
+                r.push(resultContent.shift())
+                resultContent.forEach(function(_r,index){
+                    r.push(_r)
+                    r.push(formatContent[index]);
+                })
+                result.push(r);
+            })
+            // self.baiduFanyi(content,)
+        },function(){
+            console.log(translate);
+            //TODO save to file
+        })
+        // this.baiduFanyi(title, function(data) {
+        //     if (data && data.trans_result && data.trans_result.dst) {
+        //         result.push(data.trans_result.dst);
+        //     }
+        // })
+    },
     translateAndSave: function(html) {
         if (!html) {
             return;
         }
+        var self = this;
         var content = this.getArticleContent(html);
+        this.translate(content, function(translateHtml) {
+            self.saveToCvs(translateHtml);
+        });
+        console.log('content')
     },
     getListArticles: function(obj, url, page) {
         // var urls  = obj.urls,

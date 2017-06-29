@@ -1,0 +1,11 @@
+{
+  "name": "caiji",
+  "version": "0.0.0",
+  "description": "",
+  "private": true,
+  "dependencies": {
+    "jquery": "^3.2.1",
+    "node-jquery": "^0.1.0",
+    "node-jsdom": "^3.1.5"
+  }
+}
