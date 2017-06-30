@@ -34,9 +34,14 @@ function start(response) {
     response.end();
 }
 
-function collection() {
+function collection(response) {
     // var url = 'https://stackoverflow.com/questions/tagged/javascript?sort=featured&pageSize=15'
     caiji.caiji.start();
+    response.writeHead(200,{"Content-Type":"application/json",'charset':'utf-8','Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'PUT,POST,GET,DELETE,OPTIONS'});
+    var data = {
+        code:1000,
+    }
+    response.end(JSON.stringify(data));
 }
 
 exports.start = start;
